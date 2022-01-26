@@ -4,9 +4,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mytaxi.entity.Car;
+import com.mytaxi.entity.Driver;
 import com.mytaxi.entityvo.CarRequestVO;
 import com.mytaxi.entityvo.CarVO;
 import com.mytaxi.repository.CarRepository;
+import com.mytaxi.repository.DriverRepository;
 
 @Service
 public class CarService {
@@ -16,6 +18,9 @@ public class CarService {
 
   @Autowired
   NextSequenceService nextSequenceService;
+
+  @Autowired
+  DriverRepository driverRepository;
 
   public CarVO getCar(long id) throws Exception {
     Car car = carRepository.findById(id).orElseThrow(() -> new Exception("Car Not Found"));
@@ -30,6 +35,12 @@ public class CarService {
   }
 
   public void deleteCar(long id) {
+    Driver driver = driverRepository.findByCarId(id);
+    if (driver != null) {
+      driver.setCar(null);
+      driverRepository.save(driver);
+    }
+
     carRepository.deleteById(id);
   }
 
@@ -39,6 +50,13 @@ public class CarService {
     updatedCar = new ObjectMapper().findAndRegisterModules().convertValue(car, Car.class);
     updatedCar.setId(carObj.getId());
     updatedCar.setDateCreated(carObj.getDateCreated());
+
+    Driver driver = driverRepository.findByCarId(id);
+    if (driver != null) {
+      driver.setCar(updatedCar);
+      driverRepository.save(driver);
+    }
+
     carRepository.save(updatedCar);
     return new ObjectMapper().findAndRegisterModules().convertValue(updatedCar, CarVO.class);
   }
